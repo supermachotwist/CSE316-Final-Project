@@ -1,0 +1,15 @@
+CREATE TABLE `accounts` (
+  `employeeID` varchar(20) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `firstName` varchar(50) DEFAULT NULL,
+  `lastName` varchar(50) DEFAULT NULL,
+  `passcode` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`employeeID`),
+  UNIQUE KEY `email_UNIQUE` (`email`)
+)
+
+CREATE TABLE `lab_employee` (
+  `labID` int NOT NULL,
+  `password` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`labID`)
+)
