@@ -3,6 +3,8 @@ var express = require('express');
 var session = require('express-session');
 var bodyParser = require('body-parser');
 var path = require('path');
+const url = require('url');
+const { response } = require('express');
 
 var db = mysql.createConnection({
     host: 'localhost',
@@ -92,8 +94,7 @@ app.get('/labHome', function(request, response) {
 
 //redirects to Employee results page if signed in
 app.get('/employeeResults', function(request, response) {
-	//TODO: 
-	//need to redirect/show results for specific employee results
+	//TODO: need to redirect/show results for specific employee results/////////////////////////
 	if (request.session.loggedin) {
 		response.sendFile(path.join(__dirname + '/views/employeeResults.html'));
 	} else {
@@ -109,6 +110,44 @@ app.get('/testCollection', function(request, response) {
 		response.send('Please login to view this page!');
 	}
 });
+
+//Called after user enters employee id and test barcode on test collection page 
+//Attempts to add values to employee_test database
+app.post('/testCollection' ,function(request, response) {
+	var employeeID = request.body.employeeID;
+	var testBarcode = request.body.testBarcode;
+	//Checks to see if user has input for both sections
+	if(employeeID && testBarcode){
+		//Checks to see if employee ID is valid
+		db.query('SELECT * FROM accounts WHERE employeeID = ?', [employeeID], function(error, results, fields) {
+			//Valid ID, add data to table
+			if (results.length > 0) {
+				addToEmployeeTest(request, response);
+				// TODO: display table for id and test barcode/////////////////////
+				response.redirect('/testCollection')
+			}
+				else {
+				response.send('Invalid employee ID');
+			}			
+			
+		});
+	} else {
+		response.send('Please enter valid employee ID and a test barcode');
+	}
+});
+
+//Function that adds employee ID and test barcode to employee_test database
+function addToEmployeeTest(req, res) {
+    var employeeID = req.body.employeeID;
+	var testBarcode = req.body.testBarcode;
+	let addQuery = `INSERT INTO employee_test (employeeID, testBarcode) VALUES(?,?)`;
+	let add = [employeeID, testBarcode];
+	db.query(addQuery, add, (err, results, fields) => {
+		if(err){
+			response.send("Couldn't add test")
+		}
+	})
+}
 
 //Called after user presses pool mapping button or well testing button in "Lab Home Page"
 app.post('/redirectFromLabHome', function(request, response) {
@@ -139,4 +178,5 @@ app.get('/wellTesting', function(request, response) {
 		response.send('Please login to view this page!');
 	}
 });
+
 app.listen(3000);
