@@ -20,19 +20,25 @@ app.use(session({
 app.use(bodyParser.urlencoded({extended : true}));
 app.use(bodyParser.json());
 
+//Directs to login page
 app.get('/', function(request, response) {
 	response.sendFile(path.join(__dirname + '/login.html'));
 });
 
-app.post('/auth', function(request, response) {
+//Called after user presses submit and takes them to test collection page or lab home page depending on submit button
+app.post('/collector', function(request, response) {
 	var email = request.body.email;
 	var passcode = request.body.passcode;
+	var str = request.body.collectorLogin;
 	if (email && passcode) {
 		db.query('SELECT * FROM accounts WHERE email = ? AND passcode = ?', [email, passcode], function(error, results, fields) {
-			if (results.length > 0) {
+			if (results.length > 0 && "Login Collector" === str) {
 				request.session.loggedin = true;
-				request.session.email = email;
-				response.redirect('/home');
+				response.redirect('/testCollection');
+			}
+			else if (results.length > 0){
+				request.session.loggedin = true;
+				response.redirect('/labHome');
 			} else {
 				response.send('Incorrect Email and/or Passcode!');
 			}			
@@ -44,12 +50,21 @@ app.post('/auth', function(request, response) {
 	}
 });
 
-app.get('/home', function(request, response) {
+//redirects to lab home page
+app.get('/labHome', function(request, response) {
 	if (request.session.loggedin) {
-		response.sendFile(path.join(__dirname + '/home.html'));
+		response.sendFile(path.join(__dirname + '/labHome.html'));
 	} else {
 		response.send('Please login to view this page!');
 	}
-	response.end();
+});
+
+//redirects to test collection page
+app.get('/testCollection', function(request, response) {
+	if (request.session.loggedin) {
+		response.sendFile(path.join(__dirname + '/testCollection.html'));
+	} else {
+		response.send('Please login to view this page!');
+	}
 });
 app.listen(3000);

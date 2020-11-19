@@ -32,17 +32,32 @@
 			cursor: pointer;
 			font-weight: bold;
 			color: #ffffff;
+
+		}
+		.collector{
+			width: 100%;
+			padding: 15px;
+			background-color: #535b63;
+			border: 0;
+			box-sizing: border-box;
+			cursor: pointer;
+			font-weight: bold;
+			color: #ffffff;
+			margin-top: 10px;
 		}
 		</style>
 	</head>
 	<body>
 		<div class="login-page">
 			<h1>Login Page</h1>
-			<form action="auth" method="POST">
+			<form action="collector" method="POST">
 				<input type="text" name="email" placeholder="Email" required>
 				<input type="password" name="passcode" placeholder="Password" required>
-				<input type="submit">
+				<input type="submit" name="collectorLogin" value="Login Collector">
+				<br>
+				<input type="submit" class="collector"name="labLogin" value="Lab Login">
 			</form>
+			<br>
 		</div>
 	</body>
 </html>
