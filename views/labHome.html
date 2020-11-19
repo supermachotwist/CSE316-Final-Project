@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			.labHome{
+				width: 300px;
+				margin: 0 auto;
+				font-family: Tahoma, Geneva, sans-serif;
+			}
+			.labHome h1 {
+				text-align: center;
+				color: #4d4d4d;
+				font-size: 24px;
+				padding: 20px 0 20px 0;
+			}	
+			.labHome input[type="submit"]{
+				width: 100%;
+				padding: 15px;
+				background-color: #535b63;
+				border: 0;
+				box-sizing: border-box;
+				cursor: pointer;
+				font-weight: bold;
+				color: #ffffff;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="labHome">
+			<h1>Lab Home</h1>
+			<form action="redirectFromLabHome" method="POST">
+				<input type="submit" name="poolMapping" id="poolMapping"
+				value="Pool Mapping">
+				<br>
+				<br>
+				<input type="submit" name="wellTesting" id="wellTesting"
+				value="Well Testing">
+			</form>	
+		</div>
+	</body>
+</html>
