@@ -31,7 +31,26 @@
 			cursor: pointer;
 			font-weight: bold;
 			color: #ffffff;
-
+		}
+		.testCollection input[type="button"] {
+			width: 100%;
+			padding: 15px;
+			background-color: #535b63;
+			border: 0;
+			box-sizing: border-box;
+			cursor: pointer;
+			font-weight: bold;
+			color: #ffffff;
+		}
+		.testCollection th {
+			width: 150px;
+			padding: 15px;
+			border: 1px solid #dddddd;
+		}
+		.testCollection td {
+			width: 150px;
+			padding: 15px;
+			border: 1px solid #dddddd;
 		}
 		</style>
 	</head>
@@ -44,6 +63,49 @@
 				<input type="submit" class="add" name="addBtn" value="Add">
 			</form>
 			<br>
+			<table id=testCollection>
+			</table>
+			<input type="submit" value="Delete Row" onclick="deleteRow()"/>
 		</div>
 	</body>
+	<script>
+		function createTable() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("testCollection").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("GET", "?str=table", true);
+			xhttp.send();
+		}
+
+		function deleteRow() {
+			var rowsToDelete = [];
+			var table = document.getElementById("testCollection");
+			var rowCount = table.rows.length;
+			//delete row from table if checkbox is checked
+			for (var i = 1; i < rowCount; i++) {
+
+				var row = table.rows[i];
+				var checkbox = row.cells[0].childNodes[1];
+				if (null != checkbox && true == checkbox.checked) {
+					var employeeID = row.cells[1].childNodes[0].wholeText;
+					var testBarcode = row.cells[2].childNodes[0].wholeText;
+					rowsToDelete.push({employeeID:employeeID, testBarcode:testBarcode});
+				}
+			}
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("testCollection").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("POST", "?str=delete", true);
+			xhttp.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+			var send = JSON.stringify(rowsToDelete)
+			xhttp.send(send);
+		}
+		createTable();
+	</script>
 </html>

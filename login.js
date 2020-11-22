@@ -104,7 +104,13 @@ app.get('/employeeResults', function(request, response) {
 
 //redirects to test collection page if signed in
 app.get('/testCollection', function(request, response) {
-	if (request.session.loggedin) {
+	if (request.query.str == "table") {
+		//build table and send
+		createTestCollectionTable(function(table) {
+			response.send(table);
+		});
+	}
+	else if (request.session.loggedin) {
 		response.sendFile(path.join(__dirname + '/views/testCollection.html'));
 	} else {
 		response.send('Please login to view this page!');
@@ -114,25 +120,35 @@ app.get('/testCollection', function(request, response) {
 //Called after user enters employee id and test barcode on test collection page 
 //Attempts to add values to employee_test database
 app.post('/testCollection' ,function(request, response) {
-	var employeeID = request.body.employeeID;
-	var testBarcode = request.body.testBarcode;
-	//Checks to see if user has input for both sections
-	if(employeeID && testBarcode){
-		//Checks to see if employee ID is valid
-		db.query('SELECT * FROM accounts WHERE employeeID = ?', [employeeID], function(error, results, fields) {
-			//Valid ID, add data to table
-			if (results.length > 0) {
-				addToEmployeeTest(request, response);
-				// TODO: display table for id and test barcode/////////////////////
-				response.redirect('/testCollection')
-			}
-				else {
-				response.send('Invalid employee ID');
-			}			
-			
-		});
-	} else {
-		response.send('Please enter valid employee ID and a test barcode');
+	if (request.query.str == "delete") {
+		//delete selected employees from employee_test table
+		testCollectionDelete(request.body, function() {
+			createTestCollectionTable(function(table) {
+			response.send(table);
+		})});
+		//build table and send
+	}
+	else {
+		var employeeID = request.body.employeeID;
+		var testBarcode = request.body.testBarcode;
+		//Checks to see if user has input for both sections
+		if(employeeID && testBarcode){
+			//Checks to see if employee ID is valid
+			db.query('SELECT * FROM accounts WHERE employeeID = ?', [employeeID], function(error, results, fields) {
+				//Valid ID, add data to table
+				if (results.length > 0) {
+					addToEmployeeTest(request, response);
+					// TODO: display table for id and test barcode/////////////////////				
+					response.redirect('/testCollection')
+				}
+					else {
+					response.send('Invalid employee ID');
+				}			
+				
+			});
+		} else {
+			response.send('Please enter valid employee ID and a test barcode');
+		}
 	}
 });
 
@@ -178,5 +194,42 @@ app.get('/wellTesting', function(request, response) {
 		response.send('Please login to view this page!');
 	}
 });
+
+//create table at /testCollection
+function createTestCollectionTable(addRowCallBack) {
+	//create table headers
+	var tablehtml = 
+	`<tr>
+		<th> Select </th>
+		<th> Employee ID </th>
+		<th> Test Barcode </th>
+	</tr>`
+
+	db.query(`SELECT employeeID, testBarcode FROM employee_test`, function (error, results, fields) {
+			if (error)
+				throw console.log(error);
+			for (let item of results) {
+				var employeeID = item.employeeID;
+				var testBarcode = item.testBarcode;
+				//Create checkbox column
+				tablehtml +=
+					`<tr>
+				<td> <input type="checkbox"></input> </td>
+				<td>` + employeeID + `</td>
+				<td>` + testBarcode + `</td>
+			</tr>`;
+			}
+			addRowCallBack(tablehtml);
+		});
+}
+
+//delete employee data from test collection
+function testCollectionDelete(employeesToDelete, callBack) {
+	for (i = 0; i < employeesToDelete.length; i++) {
+		db.query(`DELETE FROM employee_test WHERE employeeID="` + employeesToDelete[i].employeeID + `" AND testBarcode="` + employeesToDelete[i].testBarcode + `";`);
+	}
+	callBack();
+}
+
 
 app.listen(3000);
