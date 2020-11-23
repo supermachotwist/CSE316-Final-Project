@@ -92,16 +92,19 @@ app.get('/labHome', function(request, response) {
 	}
 });
 
-//redirects to Employee results page if signed in
-app.get('/employeeResults', function(request, response) {
-	//TODO: need to redirect/show results for specific employee results/////////////////////////
-	if (request.session.loggedin) {
-		response.sendFile(path.join(__dirname + '/views/employeeResults.html'));
-	} else {
-		response.send('Please login to view this page!');
+//Called after user presses pool mapping button or well testing button in "Lab Home Page"
+app.post('/redirectFromLabHome', function(request, response) {
+	var str = request.body.poolMapping;
+	if ("Pool Mapping" === str) {
+		response.redirect('/poolMapping');
 	}
+	else{
+		response.redirect('/wellTesting');
+	} 		
+	//response.end();
 });
 
+////////////////////////////////////////////////////////////Test Collection///////////////////////////////////////////////////////////
 //redirects to test collection page if signed in
 app.get('/testCollection', function(request, response) {
 	if (request.query.str == "table") {
@@ -156,44 +159,16 @@ app.post('/testCollection' ,function(request, response) {
 function addToEmployeeTest(req, res) {
     var employeeID = req.body.employeeID;
 	var testBarcode = req.body.testBarcode;
-	let addQuery = `INSERT INTO employee_test (employeeID, testBarcode) VALUES(?,?)`;
-	let add = [employeeID, testBarcode];
+	var today = new Date();
+	today = today.toISOString().slice(0,19).replace('T',' ');
+	let addQuery = `INSERT INTO employee_test (employeeID, testBarcode, collectionTime) VALUES(?,?,?)`;
+	let add = [employeeID, testBarcode, today];
 	db.query(addQuery, add, (err, results, fields) => {
 		if(err){
 			response.send("Couldn't add test")
 		}
 	})
 }
-
-//Called after user presses pool mapping button or well testing button in "Lab Home Page"
-app.post('/redirectFromLabHome', function(request, response) {
-	var str = request.body.poolMapping;
-	if ("Pool Mapping" === str) {
-		response.redirect('/poolMapping');
-	}
-	else{
-		response.redirect('/wellTesting');
-	} 		
-	response.end();
-});
-
-//redirects to pool mapping page if signed in
-app.get('/poolMapping', function(request, response) {
-	if (request.session.loggedin) {
-		response.sendFile(path.join(__dirname + '/views/poolMapping.html'));
-	} else {
-		response.send('Please login to view this page!');
-	}
-});
-
-//redirects to well testing page if signed in
-app.get('/wellTesting', function(request, response) {
-	if (request.session.loggedin) {
-		response.sendFile(path.join(__dirname + '/views/wellTesting.html'));
-	} else {
-		response.send('Please login to view this page!');
-	}
-});
 
 //create table at /testCollection
 function createTestCollectionTable(addRowCallBack) {
@@ -231,5 +206,191 @@ function testCollectionDelete(employeesToDelete, callBack) {
 	callBack();
 }
 
+////////////////////////////////////////////////////////////Pool Mapping///////////////////////////////////////////////////////////
+//redirects to pool mapping page if signed in
+app.get('/poolMapping', function(request, response) {
+	if (request.session.loggedin) {
+		response.sendFile(path.join(__dirname + '/views/poolMapping.html'));
+	} else {
+		response.send('Please login to view this page!');
+	}
+});
+
+//////////////////////////////////////////////////////////////Well Testing//////////////////////////////////////////////////////////////////
+
+//Flag for editing well sample
+var flag = 0; 
+
+//redirects to well testing page if signed in
+app.get('/wellTesting', function(request, response) {
+	if (request.query.str == "table") {
+		//build table and send
+		createWellTable(function(table) {
+			response.send(table);
+		});
+	}
+	else if (request.session.loggedin) {
+		response.sendFile(path.join(__dirname + '/views/wellTesting.html'));
+	} else {
+		response.send('Please login to view this page!');
+	}
+});
+
+//Validates input from well_testing page and also builds the table
+app.post('/wellTesting' ,function(request, response) {
+	if (request.query.str == "delete") {
+		//delete selected employees from employee_test table
+		wellTableDelete(request.body, function() {
+			createWellTable(function(table) {
+			response.send(table);
+		})});
+		//build table and send
+	}
+	else if(request.query.str == "edit") {
+		flag = 1;
+	}
+	else {
+		var wellBarcode = request.body.wellBarcode;
+		var poolBarcode = request.body.poolBarcode;
+		//Checks to see if user has input for both sections
+		if(wellBarcode && poolBarcode){
+			//Checks to see if employee ID is valid
+			db.query('SELECT * FROM pool WHERE poolBarcode = ?', [poolBarcode], function(error, results, fields) {
+				//Valid ID, add data to table
+				if (results.length > 0) {
+					addToWellTesting(request, response);
+				}
+					else {
+					response.send('Invalid pool barcode');
+				}			
+				
+			});
+		} else {
+			response.send('Please enter valid well barcode and a pool barcode');
+		}
+	}
+});
+
+//Adds well_testing data to well_testing data
+function addToWellTesting(request, response) {
+    var wellBarcode = request.body.wellBarcode;
+	var poolBarcode = request.body.poolBarcode;
+	var result = request.body.results;
+	var today = new Date();
+	var endDate = new Date();
+	endDate.setDate(today.getDate() + 2);
+
+	//Converts dates to mysql datetime format
+	today = today.toISOString().slice(0,19).replace('T',' ');
+	endDate = endDate.toISOString().slice(0,19).replace('T',' ');
+	let addQ = `INSERT INTO well (wellBarcode) VALUES(?)`;
+	//If adding to database for first time
+	if(flag == 0){
+		let a = [wellBarcode];
+		db.query(addQ, a, (err, results, fields) => {
+			if(err){
+			}
+		})
+		let addQuery = `INSERT INTO well_testing (poolBarcode, wellBarcode, testingStartTime, testingEndTime, result) VALUES(?,?,?,?,?)`;
+		let add = [poolBarcode, wellBarcode, today, endDate, result];
+		db.query(addQuery, add, (err, results, fields) => {
+			if(err){
+			}
+		})
+	}
+	//Editing the database
+	else{
+		db.query(`Update well_testing set result ="`+ result + `" WHERE wellBarcode="` + wellBarcode + `" AND poolBarcode="` + poolBarcode + `";`);
+	}
+	flag = 0;
+	response.redirect('/wellTesting')
+}
+
+//create table at /wellTesting
+function createWellTable(addRowCallBack) {
+	//create table headers
+	var tablehtml = 
+	`<tr>
+		<th> Select </th>
+		<th> Well barcode </th>
+		<th> Pool barcode </th>
+		<th> Result </th>
+	</tr>`
+
+	db.query(`SELECT poolBarcode, wellBarcode, result FROM well_testing`, function (error, results, fields) {
+			if (error)
+				throw console.log(error);
+			for (let item of results) {
+				var poolBarcode = item.poolBarcode;
+				var wellBarcode = item.wellBarcode;
+				var result = item.result;
+				//Create checkbox column
+				tablehtml +=
+					`<tr>
+				<td> <input type="checkbox"></input></td>
+				<td>` + wellBarcode + `</td>
+				<td>` + poolBarcode + `</td>
+				<td>` + result + `</td>
+			</tr>`;
+			}
+			addRowCallBack(tablehtml);
+		});
+}
+
+//delete well data from well collection
+function wellTableDelete(wellToDelete, callBack) {
+	for (i = 0; i < wellToDelete.length; i++) {
+		db.query(`DELETE FROM well_testing WHERE wellBarcode="` + wellToDelete[i].wellBarcode + `" AND poolBarcode="` + wellToDelete[i].poolBarcode + `";`);
+	}
+	callBack();
+}
+
+////////////////////////////////////////////////////////////Employee Results///////////////////////////////////////////////////////////
+//redirects to Employee results page if signed in
+app.get('/employeeResults', function(request, response) {
+	if (request.query.str == "table") {
+		//build table and send
+		createEmployeeResultsTable(function(table) {
+			response.send(table);
+		});
+	}
+	else if (request.session.loggedin) {
+		response.sendFile(path.join(__dirname + '/views/employeeResults.html'));
+	} else {
+		response.send('Please login to view this page!');
+	}
+});
+
+
+//create table at /wellTesting
+function createEmployeeResultsTable(addRowCallBack) {
+	//create table headers
+	var tablehtml = 
+	`<tr>
+		<th> Collection Date </th>
+		<th> Results </th>
+	</tr>`
+
+	db.query(`select E.collectionTime, W.result from employee_test E,
+				(select PM.testBarcode, A.result from pool_map PM,
+					(select P.poolBarcode, WT.result from pool P, well_testing WT where P.poolBarcode = WT.poolBarcode) as A
+					where PM.poolBarcode = A.poolBarcode) as W
+				where W.testBarcode = E.testBarcode;`, 
+				function (error, results, fields) {
+			if (error)
+				throw console.log(error);
+			for (let item of results) {
+				var collectionTime = item.collectionTime;
+				var result = item.result;
+				//Create checkbox column
+				tablehtml +=
+					`<tr>
+				<td>` + collectionTime + `</td>
+				<td>` + result + `</td>
+			</tr>`;
+			}
+			addRowCallBack(tablehtml);
+		});
+}
 
 app.listen(3000);
