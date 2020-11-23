@@ -1,1 +1,152 @@
-<h1>Hi</h1>
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Well Testing Page</title>
+		<style>
+		.wellTesting {
+			width: 300px;
+			margin: 0 auto;
+			font-family: Tahoma, Geneva, sans-serif;
+		}
+		.wellTesting h1 {
+			text-align: center;
+			color: #4d4d4d;
+			font-size: 24px;
+			padding: 20px 0 20px 0;
+		}
+		.wellTesting input[type="number"]{
+			width: 100%;
+			padding: 15px;
+			border: 1px solid #dddddd;
+			margin-bottom: 15px;
+			box-sizing:border-box;
+		}
+		.wellTesting input[type="submit"] {
+			width: 100%;
+			padding: 15px;
+			background-color: #535b63;
+			border: 0;
+			box-sizing: border-box;
+			cursor: pointer;
+			font-weight: bold;
+			color: #ffffff;
+		}
+		.wellTesting input[type="button"] {
+			width: 100%;
+			padding: 15px;
+			background-color: #535b63;
+			border: 0;
+			box-sizing: border-box;
+			cursor: pointer;
+			font-weight: bold;
+			color: #ffffff;
+		}
+		.wellTesting th {
+			width: 150px;
+			padding: 15px;
+			border: 1px solid #dddddd;
+		}
+		.wellTesting td {
+			width: 150px;
+			padding: 15px;
+			border: 1px solid #dddddd;
+		}
+        #results{
+            margin-bottom: 20px;
+        }
+		</style>
+	</head>
+	<body>
+		<div class="wellTesting">
+			<h1>Well Testing</h1>
+			<form action="wellTesting" method="POST">
+                <label for="wellBarcode">Well Barcode: </label>
+                <input type="number" name="wellBarcode" id="wellBarcode" placeholder="Well Barcode" required>
+                <label for="poolBarcode">Pool Barcode: </label>
+                <input type="number" name="poolBarcode" id="poolBarcode" placeholder="Pool Barcode" required>
+                <label for="results">Results: </label>
+                <select name="results" id="results">
+                    <option value="in progress">In Progress</option>
+                    <option value="positive">Positive</option>
+                    <option value="negative">Negative</option>
+                </select>
+                <br>
+				<input type="submit" class="add" name="addBtn" value="Add">
+			</form>
+			<br>
+			<table id=wellTesting>
+			</table>
+			<input type="submit" value="Edit" onclick="editRow()"/>
+			<br>
+			<br>
+			<input type="submit" value="Delete Row" onclick="deleteRow()"/>
+		</div>
+	</body>
+	<script>
+		function createTable() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("wellTesting").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("GET", "?str=table", true);
+			xhttp.send();
+		}
+
+		function editRow(){
+			var table = document.getElementById("wellTesting");
+			var rowCount = table.rows.length;
+			//delete row from table if checkbox is checked
+			for (var i = 1; i < rowCount; i++) {
+				var row = table.rows[i];
+                var checkbox = row.cells[0].childNodes[1];
+				if (null != checkbox && true == checkbox.checked) {
+					var poolBarcode = row.cells[2].childNodes[0].wholeText;
+					var wellBarcode = row.cells[1].childNodes[0].wholeText;
+					document.getElementById("poolBarcode").value = poolBarcode;
+					document.getElementById("wellBarcode").value = wellBarcode;
+					break;
+				}
+			}
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("wellTesting").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("POST", "?str=edit", true);
+			xhttp.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+			xhttp.send();
+		}
+
+		function deleteRow() {
+			var rowsToDelete = [];
+			var table = document.getElementById("wellTesting");
+			var rowCount = table.rows.length;
+			//delete row from table if checkbox is checked
+			for (var i = 1; i < rowCount; i++) {
+
+				var row = table.rows[i];
+                var checkbox = row.cells[0].childNodes[1];
+				if (null != checkbox && true == checkbox.checked) {
+					var poolBarcode = row.cells[2].childNodes[0].wholeText;
+					var wellBarcode = row.cells[1].childNodes[0].wholeText;
+					rowsToDelete.push({poolBarcode:poolBarcode, wellBarcode:wellBarcode});
+				}
+			}
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("wellTesting").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("POST", "?str=delete", true);
+			xhttp.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+			var send = JSON.stringify(rowsToDelete)
+			xhttp.send(send);
+		}
+		createTable();
+	</script>
+</html>
