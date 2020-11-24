@@ -1,1 +1,110 @@
-<h1>Bye</h1>
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Well Testing Page</title>
+		<style>
+		.poolMapping {
+			width: 300px;
+			margin: 0 auto;
+			font-family: Tahoma, Geneva, sans-serif;
+		}
+		.poolMapping h1 {
+			text-align: center;
+			color: #4d4d4d;
+			font-size: 24px;
+			padding: 20px 0 20px 0;
+		}
+		.poolMapping input[type="number"]{
+			width: 100%;
+			padding: 15px;
+			border: 1px solid #dddddd;
+			margin-bottom: 15px;
+			box-sizing:border-box;
+		}
+		.poolMapping input[type="submit"] {
+			width: 100%;
+			padding: 15px;
+			background-color: #535b63;
+			border: 0;
+			box-sizing: border-box;
+			cursor: pointer;
+			font-weight: bold;
+			color: #ffffff;
+		}
+		.poolMapping input[type="button"] {
+			width: 100%;
+			padding: 15px;
+			background-color: #535b63;
+			border: 0;
+			box-sizing: border-box;
+			cursor: pointer;
+			font-weight: bold;
+			color: #ffffff;
+		}
+		.poolMapping th {
+			width: 150px;
+			padding: 15px;
+			border: 1px solid #dddddd;
+		}
+		.poolMapping td {
+			width: 150px;
+			padding: 15px;
+			border: 1px solid #dddddd;
+		}
+		</style>
+    </head>
+    <body>
+        <div class="poolMapping">
+			<h1>Well Testing</h1>
+			<form action="poolMapping" method="POST" id="form">
+                <label for="poolBarcode">Pool Barcode: </label>
+                <input type="number" name="poolBarcode" id="poolBarcode" placeholder="Pool Barcode" required>
+                <label for="testBarcodes">Test Barcodes: </label>
+                <table id="testBarcodesTable">
+                    <tr>
+                        <td><input type="number" name="testBarcodes" id="testBarcodes" placeholder="Barcodes" required></td>
+                        <td><input type="button" value="Delete" onclick="removeRow(this)"/></td>
+                    </tr>
+                </table>
+                <input type="submit" class="add" name="addBtn" value="Submit Pool">
+            </form>
+            <br>
+            <input type="button" value="Add More Rows" onclick="addMoreRows()"/>
+            <br><br>
+			<table id="poolTesting">
+			</table>
+			<input type="submit" value="Edit" onclick="editRow()"/>
+			<br><br>
+			<input type="submit" value="Delete Row" onclick="deleteRow()"/>
+		</div>
+    </body>
+    <script>
+        function addMoreRows() {
+            var table = document.getElementById("testBarcodesTable");
+            var rowCount = table.rows.length;
+            var row = table.insertRow(rowCount);
+
+            var cell1 = row.insertCell(0);
+            var input = document.createElement("input");
+            input.type = "number";
+            input.name = "testBarcodes";
+            input.placeholder = "Barcodes";
+            input.required = true;
+            cell1.appendChild(input);
+
+            var cell2 = row.insertCell(1);
+            var input2 = document.createElement("input");
+            input2.type = "button";
+            input2.value = "Delete";
+            input2.onclick = function () {removeRow(this)};
+            cell2.appendChild(input2);
+        }
+        
+        //remove selected row from barcode table
+        function removeRow(row) {
+            var p = row.parentNode.parentNode;
+            p.parentNode.removeChild(p);
+        }
+    </script>
+</html>

@@ -216,6 +216,10 @@ app.get('/poolMapping', function(request, response) {
 	}
 });
 
+app.post('/poolMapping', function(request, response) {
+
+});
+
 //////////////////////////////////////////////////////////////Well Testing//////////////////////////////////////////////////////////////////
 
 //Flag for editing well sample
