@@ -207,23 +207,137 @@ function testCollectionDelete(employeesToDelete, callBack) {
 }
 
 ////////////////////////////////////////////////////////////Pool Mapping///////////////////////////////////////////////////////////
+//Flag for editing tables
+var flag = 0; 
+
 //redirects to pool mapping page if signed in
 app.get('/poolMapping', function(request, response) {
-	if (request.session.loggedin) {
+	if (request.query.str == "table") {
+		//build table and send
+		createPoolTable(function(table) {
+			response.send(table);
+		});
+	}
+	else if (request.session.loggedin) {
 		response.sendFile(path.join(__dirname + '/views/poolMapping.html'));
 	} else {
 		response.send('Please login to view this page!');
 	}
 });
 
-app.post('/poolMapping', function(request, response) {
-
+//Validates input from well_testing page and also builds the table
+app.post('/poolMapping' ,function(request, response) {
+	if (request.query.str == "delete") {
+		//delete selected employees from employee_test table
+		poolTableDelete(request.body, function() {
+			createPoolTable(function(table) {
+			response.send(table);
+		})});
+		//build table and send
+	}
+	else if(request.query.str == "edit") {
+		flag = 1;
+	}
+	//add to the table and database
+	else {
+		var poolBarcode = request.body.poolBarcode;
+		var testBarcodes = request.body.testBarcodes;
+		if (!Array.isArray(testBarcodes)) { //Convert string into array
+			testBarcodes = [testBarcodes];
+		}
+		//Checks to see if user has input for both sections
+		if(poolBarcode && testBarcodes.length > 0){
+			//Check if all testBarcodes are valid and non overlapping
+			for (var i = 0; i < testBarcodes.length; i++) {
+				//Checks to see if all testBarcodes are valid before adding to database
+				(function(index) {
+					db.query('SELECT * FROM employee_test WHERE testBarcode = ?', [testBarcodes[index]], function(error, results, fields) {
+						//Valid Barcode, repeat for all Barcodes
+						if (results.length > 0) {
+							addToPoolMap(poolBarcode, testBarcodes[index]);
+							if (index == testBarcodes.length - 1) {
+								flag = 0;
+								response.redirect('/poolMapping');
+							}
+						}
+						else {
+							response.send('Invalid test barcode');
+						}			
+					});
+				})(i);
+			}
+		} else {
+			response.send('Please enter valid pool barcode and test barcode');
+		}
+	}
 });
 
-//////////////////////////////////////////////////////////////Well Testing//////////////////////////////////////////////////////////////////
+//Adds poolMapping data to pool and pool_map table
+function addToPoolMap(poolBarcode, testBarcode) {
+	let addQ = `INSERT INTO pool (poolBarcode) VALUES(?)`;
+	//If adding to database for first time
+	if(flag == 0){
+		let a = [poolBarcode];
+		//add to pool table
+		db.query(addQ, a, (err, results, fields) => {
+			if(err){
+				console.log(err);
+			}
+		})
+		//add to pool_map table
+		let addQuery = `INSERT INTO pool_map (testBarcode, poolBarcode) VALUES(?,?)`;
+		let add = [testBarcode, poolBarcode];
+		db.query(addQuery, add, (err, results, fields) => {
+			if(err){
+			}
+		})
+	}
+	//Editing the database
+	else{
+		db.query(`Update pool_map set testBarcode ="`+ testBarcode + `" WHERE poolBarcode="` + poolBarcode + `";`);
+	}
+}
 
-//Flag for editing well sample
-var flag = 0; 
+//create table at /poolMapping
+function createPoolTable(addRowCallBack) {
+	//create table headers
+	var tablehtml = 
+	`<tr>
+		<th> Select </th>
+		<th> Pool barcode </th>
+		<th> Test barcode </th>
+	</tr>`
+
+	db.query(`SELECT poolBarcode, GROUP_CONCAT(testBarcode) AS testBarcodes FROM pool_map GROUP BY poolBarcode;`, function (error, results, fields) {
+			if (error)
+				throw console.log(error);
+			for (let item of results) {
+				var poolBarcode = item.poolBarcode;
+				var testBarcodes = item.testBarcodes;
+				//Create checkbox column
+				tablehtml +=
+					`<tr>
+				<td> <input type="checkbox"></input></td>
+				<td>` + poolBarcode + `</td>
+				<td>` + testBarcodes + `</td>
+			</tr>`;
+			}
+			addRowCallBack(tablehtml);
+		});
+}
+
+//delete well data from well collection
+function poolTableDelete(poolToDelete, callBack) {
+	for (i = 0; i < poolToDelete.length; i++) {
+		var j = i;
+		db.query(`DELETE FROM pool_map WHERE poolBarcode="` + poolToDelete[j].poolBarcode + `";`);
+		db.query(`DELETE FROM pool WHERE poolBarcode="` + poolToDelete[j].poolBarcode + `";`);
+	}
+	callBack();
+}
+
+
+//////////////////////////////////////////////////////////////Well Testing//////////////////////////////////////////////////////////////////
 
 //redirects to well testing page if signed in
 app.get('/wellTesting', function(request, response) {
@@ -344,7 +458,9 @@ function createWellTable(addRowCallBack) {
 //delete well data from well collection
 function wellTableDelete(wellToDelete, callBack) {
 	for (i = 0; i < wellToDelete.length; i++) {
-		db.query(`DELETE FROM well_testing WHERE wellBarcode="` + wellToDelete[i].wellBarcode + `" AND poolBarcode="` + wellToDelete[i].poolBarcode + `";`);
+		var j = i;
+		db.query(`DELETE FROM well_testing WHERE wellBarcode="` + wellToDelete[j].wellBarcode + `" AND poolBarcode="` + wellToDelete[j].poolBarcode + `";`);
+		db.query(`DELETE FROM well WHERE wellBarcode="` + wellToDelete[j].wellBarcode + `";`);
 	}
 	callBack();
 }

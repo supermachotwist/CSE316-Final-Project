@@ -105,6 +105,70 @@
         function removeRow(row) {
             var p = row.parentNode.parentNode;
             p.parentNode.removeChild(p);
-        }
+		}
+		
+		function createTable() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("poolTesting").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("GET", "?str=table", true);
+			xhttp.send();
+		}
+
+		function editRow(){
+			var table = document.getElementById("poolTestin");
+			var rowCount = table.rows.length;
+			//delete row from table if checkbox is checked
+			for (var i = 1; i < rowCount; i++) {
+				var row = table.rows[i];
+                var checkbox = row.cells[0].childNodes[1];
+				if (null != checkbox && true == checkbox.checked) {
+					var poolBarcode = row.cells[1].childNodes[0].wholeText;
+					var testBarcodes = row.cells[2].childNodes[0].wholeText;
+					document.getElementById("poolBarcode").value = poolBarcode;
+					document.getElementById("testBarcodes").value = testBarcodes;
+					break;
+				}
+			}
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("poolTesting").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("POST", "?str=edit", true);
+			xhttp.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+			xhttp.send();
+		}
+
+		function deleteRow() {
+			var rowsToDelete = [];
+			var table = document.getElementById("poolTesting");
+			var rowCount = table.rows.length;
+			//delete row from table if checkbox is checked
+			for (var i = 1; i < rowCount; i++) {
+
+				var row = table.rows[i];
+                var checkbox = row.cells[0].childNodes[1];
+				if (null != checkbox && true == checkbox.checked) {
+					var poolBarcode = row.cells[1].childNodes[0].wholeText;
+					rowsToDelete.push({poolBarcode:poolBarcode});
+				}
+			}
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("poolTesting").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("POST", "?str=delete", true);
+			xhttp.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+			var send = JSON.stringify(rowsToDelete)
+			xhttp.send(send);
+		}
+		createTable();
     </script>
 </html>

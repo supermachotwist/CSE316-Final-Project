@@ -6,13 +6,13 @@ CREATE TABLE `accounts` (
   `passcode` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`employeeID`),
   UNIQUE KEY `email_UNIQUE` (`email`)
-)
+);
 
 CREATE TABLE `lab_employee` (
   `labID` varchar(50) NOT NULL,
   `password` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`labID`)
-)
+);
 
 CREATE TABLE `employee_test` (
   `testBarcode` varchar(50) NOT NULL,
@@ -24,12 +24,12 @@ CREATE TABLE `employee_test` (
   KEY `employeeID` (`employeeID`),
   CONSTRAINT `employee_test_ibfk_1` FOREIGN KEY (`collectedBy`) REFERENCES `lab_employee` (`labID`),
   CONSTRAINT `employee_test_ibfk_2` FOREIGN KEY (`employeeID`) REFERENCES `accounts` (`employeeID`)
-) 
+);
 
 CREATE TABLE `pool` (
   `poolBarcode` varchar(50) NOT NULL,
   PRIMARY KEY (`poolBarcode`)
-) 
+);
 
 CREATE TABLE `pool_map` (
   `testBarcode` varchar(50) DEFAULT NULL,
@@ -38,12 +38,15 @@ CREATE TABLE `pool_map` (
   KEY `testBarcode` (`testBarcode`),
   CONSTRAINT `pool_map_ibfk_1` FOREIGN KEY (`poolBarcode`) REFERENCES `pool` (`poolBarcode`),
   CONSTRAINT `pool_map_ibfk_2` FOREIGN KEY (`testBarcode`) REFERENCES `employee_test` (`testBarcode`)
-) 
+);
+
+ALTER TABLE `pool_map`
+	ADD CONSTRAINT `mapping` PRIMARY KEY (`poolBarcode`, `testBarcode`);
 
 CREATE TABLE `well` (
   `wellBarcode` varchar(50) NOT NULL,
   PRIMARY KEY (`wellBarcode`)
-)
+);
 
 CREATE TABLE `well_testing` (
   `poolBarcode` varchar(50) DEFAULT NULL,
@@ -56,4 +59,4 @@ CREATE TABLE `well_testing` (
   CONSTRAINT `well_testing_ibfk_1` FOREIGN KEY (`poolBarcode`) REFERENCES `pool` (`poolBarcode`),
   CONSTRAINT `well_testing_ibfk_2` FOREIGN KEY (`wellBarcode`) REFERENCES `well` (`wellBarcode`),
   CONSTRAINT `resultCheck` CHECK ((`result` in (_utf8mb4'in progress',_utf8mb4'negative',_utf8mb4'positive')))
-)
+);
