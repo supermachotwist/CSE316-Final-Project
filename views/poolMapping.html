@@ -98,13 +98,22 @@
             input2.type = "button";
             input2.value = "Delete";
             input2.onclick = function () {removeRow(this)};
-            cell2.appendChild(input2);
+			cell2.appendChild(input2);
+			return input;
         }
         
         //remove selected row from barcode table
         function removeRow(row) {
             var p = row.parentNode.parentNode;
             p.parentNode.removeChild(p);
+		}
+
+		//remove all rows from barcode table
+		function removeAllRow() {
+			var table = document.getElementById("testBarcodesTable");
+			while (table.hasChildNodes()) {
+				table.removeChild(table.childNodes[0]);
+			}
 		}
 		
 		function createTable() {
@@ -119,17 +128,22 @@
 		}
 
 		function editRow(){
-			var table = document.getElementById("poolTestin");
+			var table = document.getElementById("poolTesting");
 			var rowCount = table.rows.length;
-			//delete row from table if checkbox is checked
+			removeAllRow();  //Reset row to add back to
+			//edit first row from table if checkbox is checked
 			for (var i = 1; i < rowCount; i++) {
 				var row = table.rows[i];
                 var checkbox = row.cells[0].childNodes[1];
 				if (null != checkbox && true == checkbox.checked) {
 					var poolBarcode = row.cells[1].childNodes[0].wholeText;
-					var testBarcodes = row.cells[2].childNodes[0].wholeText;
 					document.getElementById("poolBarcode").value = poolBarcode;
-					document.getElementById("testBarcodes").value = testBarcodes;
+					var testBarcodes = row.cells[2].childNodes[0].wholeText;
+					testBarcodes = testBarcodes.split(',');
+					for (var i = 0; i < testBarcodes.length; i++) {
+						var input = addMoreRows();
+						input.value = testBarcodes[i];
+					}
 					break;
 				}
 			}

@@ -45,6 +45,9 @@ app.post('/collector', function(request, response) {
 	//Matches user info with employees database
 	if (email && passcode) {
 		db.query('SELECT * FROM accounts WHERE email = ? AND passcode = ?', [email, passcode], function(error, results, fields) {
+			if (error) {
+				console.log(error);
+			}
 			if (results.length > 0 && "Login Collector" === str) {
 				request.session.loggedin = true;
 				response.redirect('/testCollection');
@@ -138,6 +141,9 @@ app.post('/testCollection' ,function(request, response) {
 		if(employeeID && testBarcode){
 			//Checks to see if employee ID is valid
 			db.query('SELECT * FROM accounts WHERE employeeID = ?', [employeeID], function(error, results, fields) {
+				if(error){
+					response.send("Cannot add employee and test barcode. Please remove from other testing pools");
+				}
 				//Valid ID, add data to table
 				if (results.length > 0) {
 					addToEmployeeTest(request, response);
@@ -201,7 +207,11 @@ function createTestCollectionTable(addRowCallBack) {
 //delete employee data from test collection
 function testCollectionDelete(employeesToDelete, callBack) {
 	for (i = 0; i < employeesToDelete.length; i++) {
-		db.query(`DELETE FROM employee_test WHERE employeeID="` + employeesToDelete[i].employeeID + `" AND testBarcode="` + employeesToDelete[i].testBarcode + `";`);
+		db.query(`DELETE FROM employee_test WHERE employeeID="` + employeesToDelete[i].employeeID + `" AND testBarcode="` + employeesToDelete[i].testBarcode + `";`, function(error) {
+			if(error){
+				response.send("Cannot delete test");
+			}
+		});
 	}
 	callBack();
 }
@@ -254,7 +264,15 @@ app.post('/poolMapping' ,function(request, response) {
 					db.query('SELECT * FROM employee_test WHERE testBarcode = ?', [testBarcodes[index]], function(error, results, fields) {
 						//Valid Barcode, repeat for all Barcodes
 						if (results.length > 0) {
-							addToPoolMap(poolBarcode, testBarcodes[index]);
+							if (flag == 1) { //if editing, remove from table before adding barcodes
+								poolTableDelete(poolBarcode, function() {
+									addToPoolMap(poolBarcode, testBarcodes[index]);
+									flag = 0;
+								});
+							}
+							else {
+								addToPoolMap(poolBarcode, testBarcodes[index]);
+							}
 							if (index == testBarcodes.length - 1) {
 								flag = 0;
 								response.redirect('/poolMapping');
@@ -276,26 +294,21 @@ app.post('/poolMapping' ,function(request, response) {
 function addToPoolMap(poolBarcode, testBarcode) {
 	let addQ = `INSERT INTO pool (poolBarcode) VALUES(?)`;
 	//If adding to database for first time
-	if(flag == 0){
-		let a = [poolBarcode];
-		//add to pool table
-		db.query(addQ, a, (err, results, fields) => {
-			if(err){
-				console.log(err);
-			}
-		})
-		//add to pool_map table
-		let addQuery = `INSERT INTO pool_map (testBarcode, poolBarcode) VALUES(?,?)`;
-		let add = [testBarcode, poolBarcode];
-		db.query(addQuery, add, (err, results, fields) => {
-			if(err){
-			}
-		})
-	}
-	//Editing the database
-	else{
-		db.query(`Update pool_map set testBarcode ="`+ testBarcode + `" WHERE poolBarcode="` + poolBarcode + `";`);
-	}
+	let a = [poolBarcode];
+	//add to pool table
+	db.query(addQ, a, (err, results, fields) => {
+		if(err){
+			console.log(err);
+		}
+	})
+	//add to pool_map table
+	let addQuery = `INSERT INTO pool_map (testBarcode, poolBarcode) VALUES(?,?)`;
+	let add = [testBarcode, poolBarcode];
+	db.query(addQuery, add, (err, results, fields) => {
+		if(err){
+			console.log(err);
+		}
+	})
 }
 
 //create table at /poolMapping
@@ -328,10 +341,23 @@ function createPoolTable(addRowCallBack) {
 
 //delete well data from well collection
 function poolTableDelete(poolToDelete, callBack) {
+	if (!Array.isArray(poolToDelete)) { //Convert singular string to array
+		poolToDelete = [{poolBarcode:poolToDelete}];
+	}
 	for (i = 0; i < poolToDelete.length; i++) {
-		var j = i;
-		db.query(`DELETE FROM pool_map WHERE poolBarcode="` + poolToDelete[j].poolBarcode + `";`);
-		db.query(`DELETE FROM pool WHERE poolBarcode="` + poolToDelete[j].poolBarcode + `";`);
+		(function(index) {
+			db.query(`DELETE FROM pool_map WHERE poolBarcode="` + poolToDelete[index].poolBarcode + `";`, function(error) {
+				if(error){
+					response.send("Cannot delete pool");
+				}
+			});
+			db.query(`DELETE FROM pool WHERE poolBarcode="` + poolToDelete[index].poolBarcode + `";`, function(error) {
+				if(error){
+					response.send("Cannot delete pool");
+				}
+			});
+		})(i);
+		
 	}
 	callBack();
 }

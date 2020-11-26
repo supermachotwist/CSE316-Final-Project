@@ -26,6 +26,8 @@ CREATE TABLE `employee_test` (
   CONSTRAINT `employee_test_ibfk_2` FOREIGN KEY (`employeeID`) REFERENCES `accounts` (`employeeID`)
 );
 
+ALTER TABLE `employee_test` DROP CONSTRAINT `employee_test_ibfk_1`;
+
 CREATE TABLE `pool` (
   `poolBarcode` varchar(50) NOT NULL,
   PRIMARY KEY (`poolBarcode`)
@@ -41,7 +43,7 @@ CREATE TABLE `pool_map` (
 );
 
 ALTER TABLE `pool_map`
-	ADD CONSTRAINT `mapping` PRIMARY KEY (`poolBarcode`, `testBarcode`);
+ADD CONSTRAINT `mapping` PRIMARY KEY (`poolBarcode`, `testBarcode`);
 
 CREATE TABLE `well` (
   `wellBarcode` varchar(50) NOT NULL,
@@ -60,3 +62,6 @@ CREATE TABLE `well_testing` (
   CONSTRAINT `well_testing_ibfk_2` FOREIGN KEY (`wellBarcode`) REFERENCES `well` (`wellBarcode`),
   CONSTRAINT `resultCheck` CHECK ((`result` in (_utf8mb4'in progress',_utf8mb4'negative',_utf8mb4'positive')))
 );
+
+ALTER TABLE `well_testing`
+ADD CONSTRAINT `mapping` PRIMARY KEY (`poolBarcode`, `wellBarcode`);
