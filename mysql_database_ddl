@@ -42,8 +42,15 @@ CREATE TABLE `pool_map` (
   CONSTRAINT `pool_map_ibfk_2` FOREIGN KEY (`testBarcode`) REFERENCES `employee_test` (`testBarcode`)
 );
 
+SHOW KEYS FROM `pool_map` WHERE Key_name = 'PRIMARY';
+
+ALTER TABLE `pool_map`
+DROP PRIMARY KEY;
+
 ALTER TABLE `pool_map`
 ADD CONSTRAINT `mapping` PRIMARY KEY (`poolBarcode`, `testBarcode`);
+
+SELECT * FROM `pool_map`;
 
 CREATE TABLE `well` (
   `wellBarcode` varchar(50) NOT NULL,
@@ -64,4 +71,7 @@ CREATE TABLE `well_testing` (
 );
 
 ALTER TABLE `well_testing`
-ADD CONSTRAINT `mapping` PRIMARY KEY (`poolBarcode`, `wellBarcode`);
+DROP CONSTRAINT `mapping`;
+
+ALTER TABLE `well_testing`
+ADD CONSTRAINT `wellBarcode` PRIMARY KEY (`wellBarcode`);
